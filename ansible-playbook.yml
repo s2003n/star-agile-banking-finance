@@ -1,16 +1,25 @@
-- name : Configure Docker on EC2 Instances
-  hosts : all
-  become: true
-  connection : ssh
-  tasks : 
-  - name: updating apt
-    command : sudo apt-get update
+---
+- hosts: prod
+  become: yes
+  tasks:
+    - name: Stop any existing container
+      command: docker stop bankapp || true
+      ignore_errors: yes
 
-  - name : Install Docker
-    command : sudo apt-get install -y docker.io
+    - name: Remove any existing container
+      command: docker rm bankapp || true
+      ignore_errors: yes
 
-  - name : Start Docker Service
-    command : sudo systemctl start docker
+    - name: Pull the Docker image
+      docker_image:
+        name: "s2003n/bankapp:latest"
+        source: pull
 
-  - name: Deploy Docker Container
-    command: docker run -itd -p 8084:8081 saikumar2003/bankapp:latest
+    - name: Run the application container
+      docker_container:
+        name: bankapp
+        image: "s2003n/bankapp:latest"
+        ports:
+          - "8084:8081"
+        restart_policy: always
+        detach: yes
